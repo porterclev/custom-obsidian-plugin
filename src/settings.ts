@@ -1,15 +1,16 @@
-import {App, PluginSettingTab, Setting} from "obsidian";
+import { App, PluginSettingTab, Setting } from "obsidian";
+import { DEBUG, LOG_PREFIX, debug } from "./main";
 import MyPlugin from "./main";
 
-export interface MyPluginSettings {
-	mySetting: string;
+export interface RepeatIndentSettings {
+	symbols: string[]; // user editable
 }
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
-}
+export const DEFAULT_SETTINGS: RepeatIndentSettings = {
+	symbols: ["->", "-", "*"],
+};
 
-export class SampleSettingTab extends PluginSettingTab {
+export class RepeatIndentSettingTab extends PluginSettingTab {
 	plugin: MyPlugin;
 
 	constructor(app: App, plugin: MyPlugin) {
@@ -18,19 +19,28 @@ export class SampleSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		const {containerEl} = this;
+		const { containerEl } = this;
 
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Settings #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
+			.setName("Repeated symbols")
+			.setDesc("One per line");
+
+		const textArea = containerEl.createEl("textarea");
+		textArea.value = this.plugin.settings.symbols.join("\n");
+
+		textArea.onchange = async () => {
+			debug("Settings textarea changed");
+
+			this.plugin.settings.symbols = textArea.value
+				.split("\n")
+				.filter(Boolean);
+
+			debug("New symbols:", this.plugin.settings.symbols);
+
+			await this.plugin.saveSettings();
+			this.plugin.buildSymbolSet();
+		};
 	}
 }
